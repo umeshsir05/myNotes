@@ -224,12 +224,12 @@
             display: flex;
             flex-direction: column;
             padding: 1rem 1rem 1.5rem;
-            max-width: 900px;  /* optimal line length for reading */
+            max-width: 1000px;
             margin: 0 auto;
             width: 100%;
         }
 
-        /* page control bar (only prev/next) */
+        /* page control bar */
         .pdf-controls {
             display: flex;
             align-items: center;
@@ -272,35 +272,35 @@
             text-align: center;
         }
 
-        /* READING VIEW CARD - large text */
+        /* READING VIEW - IMPROVED DISPLAY */
         .reading-container {
             background-color: var(--card-bg);
-            border-radius: 32px;
-            padding: 2rem 1.8rem;
+            border-radius: 24px;
+            padding: 2rem 2rem;
             border: 1px solid var(--border-light);
             box-shadow: var(--shadow);
             flex: 1;
             width: 100%;
             overflow-y: auto;
-            min-height: 400px;
+            min-height: 500px;
             max-height: 70vh;
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
         #readingContent {
-            font-size: 1.5rem;      /* LARGE TEXT */
-            font-weight: 400;
+            font-size: 1.4rem;
             color: var(--text-reading);
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: 'Georgia', 'Times New Roman', serif;
         }
 
-        /* style for paragraphs to look like reading view */
         .reading-paragraph {
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
-            line-height: 1.7;
+            margin-bottom: 1.8rem;
+            font-size: 1.4rem;
+            line-height: 1.8;
+            text-align: left;
+            font-weight: 400;
         }
 
         .loading-indicator {
@@ -355,34 +355,27 @@
             background-color: var(--accent-soft);
         }
 
-        /* responsive tweaks */
         @media (max-width: 600px) {
             .app-title span { display: none; }
-            .app-title i { margin-right: 0; }
-            .file-selector-row { flex-direction: column; align-items: stretch; }
-            .load-btn { justify-content: center; }
-            .pdf-controls { gap: 0.5rem; }
-            .page-info { min-width: 70px; padding: 0.4rem 0.6rem; }
+            .file-selector-row { flex-direction: column; }
             .reading-container { padding: 1.5rem 1rem; }
-            #readingContent { font-size: 1.3rem; }
+            #readingContent, .reading-paragraph { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
-    <!-- top bar -->
     <header class="app-bar">
         <button class="menu-toggle" id="menuToggle" aria-label="Menu">
             <i class="fas fa-bars"></i>
         </button>
         <div class="app-title">
-            <i class="fas fa-file-pdf"></i> <span>PDF Reader View</span>
+            <i class="fas fa-file-pdf"></i> <span>PDF Reader</span>
         </div>
         <button class="dark-toggle" id="darkToggle" aria-label="Dark mode">
             <i class="fas fa-moon"></i>
         </button>
     </header>
 
-    <!-- offcanvas drawer overlay & navigation -->
     <div class="drawer-overlay" id="drawerOverlay"></div>
     <nav class="drawer" id="drawer">
         <div class="drawer-header">
@@ -390,36 +383,33 @@
             <span>Server PDFs</span>
         </div>
         <ul class="pdf-list" id="pdfList">
-            <li data-pdf="set-a.pdf"><i class="fas fa-file-pdf"></i> set-a.pdf</li>
+            <li data-pdf="sample.pdf"><i class="fas fa-file-pdf"></i> sample.pdf</li>
             <li data-pdf="manual.pdf"><i class="fas fa-file-pdf"></i> manual.pdf</li>
-            <li data-pdf="report-2025.pdf"><i class="fas fa-file-pdf"></i> report-2025.pdf</li>
+            <li data-pdf="report.pdf"><i class="fas fa-file-pdf"></i> report.pdf</li>
             <li data-pdf="brochure.pdf"><i class="fas fa-file-pdf"></i> brochure.pdf</li>
         </ul>
         <div class="drawer-footer">
-            <i class="fas fa-database"></i> files from server root
+            <i class="fas fa-database"></i> server files
         </div>
     </nav>
 
-    <!-- main content area (reading view) -->
     <main class="main-content">
-        <!-- custom file input row -->
         <div class="file-selector-row">
-            <input type="text" id="pdfInput" placeholder="set-a.pdf" value="set-a.pdf">
-            <button class="load-btn" id="loadPdfBtn"><i class="fas fa-cloud-download-alt"></i> Load PDF</button>
+            <input type="text" id="pdfInput" placeholder="enter PDF filename (e.g. sample.pdf)" value="sample.pdf">
+            <button class="load-btn" id="loadPdfBtn"><i class="fas fa-cloud-download-alt"></i> Load</button>
         </div>
 
-        <!-- simple paging controls (prev/next page) -->
         <div class="pdf-controls">
-            <button class="ctrl-btn" id="prevPage" title="Previous page"><i class="fas fa-chevron-left"></i></button>
-            <span class="page-info" id="pageNum">1 / 1</span>
-            <button class="ctrl-btn" id="nextPage" title="Next page"><i class="fas fa-chevron-right"></i></button>
+            <button class="ctrl-btn" id="prevPage"><i class="fas fa-chevron-left"></i></button>
+            <span class="page-info" id="pageNum">- / -</span>
+            <button class="ctrl-btn" id="nextPage"><i class="fas fa-chevron-right"></i></button>
         </div>
 
-        <!-- READING VIEW with LARGE TEXT -->
         <div class="reading-container">
-            <div id="readingContent" class="reading-content">
-                <div class="loading-indicator" style="display: flex; align-items: center; justify-content: center; height: 100%;">
-                    <i class="fas fa-book-open" style="margin-right: 1rem;"></i> Load a PDF to start reading
+            <div id="readingContent">
+                <div class="loading-indicator">
+                    <i class="fas fa-book-open" style="margin-right: 1rem;"></i> 
+                    Load a PDF to read
                 </div>
             </div>
         </div>
@@ -427,10 +417,8 @@
 
     <script>
         (function() {
-            // ---------- pdf.js worker ----------
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-            // ---------- DOM elements ----------
             const readingDiv = document.getElementById('readingContent');
             const pageNumSpan = document.getElementById('pageNum');
             const prevBtn = document.getElementById('prevPage');
@@ -443,136 +431,164 @@
             const overlay = document.getElementById('drawerOverlay');
             const darkToggle = document.getElementById('darkToggle');
 
-            // ---------- state ----------
             let pdfDoc = null;
             let currentPage = 1;
             let totalPages = 1;
-            let pageTexts = [];      // cache extracted text per page
+            let textCache = {};
 
-            // dark mode handling
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (localStorage.getItem('pdf-dark') === 'true' || (!localStorage.getItem('pdf-dark') && prefersDark)) {
+            // Dark mode
+            if (localStorage.getItem('pdf-dark') === 'true') {
                 document.body.classList.add('dark');
                 darkToggle.innerHTML = '<i class="fas fa-sun"></i>';
-            } else {
-                darkToggle.innerHTML = '<i class="fas fa-moon"></i>';
             }
 
-            // ---------- helper: extract text from a page ----------
-            async function extractPageText(pageNum) {
+            // Improved text extraction
+            async function extractTextFromPage(pageNum) {
                 if (!pdfDoc) return '';
+                
                 try {
                     const page = await pdfDoc.getPage(pageNum);
                     const textContent = await page.getTextContent();
-                    // join text items with spaces, preserve some layout with newlines
+                    
+                    // Group text items by their Y position to form lines
+                    let lines = [];
+                    let currentLine = [];
                     let lastY = null;
-                    let text = '';
-                    for (let item of textContent.items) {
-                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-                            text += '\n'; // new line when y changes significantly
+                    
+                    // Sort items by vertical position
+                    const items = textContent.items.sort((a, b) => {
+                        return a.transform[5] - b.transform[5];
+                    });
+                    
+                    for (let item of items) {
+                        const y = Math.round(item.transform[5] * 10) / 10;
+                        
+                        if (lastY !== null && Math.abs(y - lastY) > 5) {
+                            // New line
+                            if (currentLine.length > 0) {
+                                lines.push(currentLine.sort((a, b) => a.transform[4] - b.transform[4]).map(i => i.str).join(' '));
+                                currentLine = [];
+                            }
                         }
-                        text += item.str + ' ';
-                        lastY = item.transform[5];
+                        
+                        currentLine.push(item);
+                        lastY = y;
                     }
-                    // clean up multiple spaces and break into paragraphs
-                    return text.replace(/\s+/g, ' ').replace(/\n /g, '\n').trim();
-                } catch (e) {
-                    console.warn('text extraction error', e);
-                    return '[could not extract text from this page]';
+                    
+                    // Add last line
+                    if (currentLine.length > 0) {
+                        lines.push(currentLine.sort((a, b) => a.transform[4] - b.transform[4]).map(i => i.str).join(' '));
+                    }
+                    
+                    // Join lines with newlines and clean up
+                    return lines.join('\n').replace(/\s+/g, ' ').replace(/ \n/g, '\n').trim();
+                    
+                } catch (error) {
+                    console.error('Text extraction error:', error);
+                    return '[Text extraction failed for this page]';
                 }
             }
 
-            // ---------- render current page as large text ----------
-            async function renderTextPage(pageNum) {
+            // Display page content with better formatting
+            async function displayPage(pageNum) {
                 if (!pdfDoc) return;
 
-                readingDiv.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-pulse"></i> Loading page content...</div>';
+                readingDiv.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-pulse"></i> Loading page...</div>';
 
                 try {
-                    // if we already cached, use it; else extract
-                    if (!pageTexts[pageNum]) {
-                        pageTexts[pageNum] = await extractPageText(pageNum);
+                    // Get text (cached or new)
+                    if (!textCache[pageNum]) {
+                        textCache[pageNum] = await extractTextFromPage(pageNum);
                     }
-                    let pageText = pageTexts[pageNum];
-
-                    // format as paragraphs for better readability (split by double newlines)
-                    let paragraphs = pageText.split(/\n\s*\n/);
-                    if (paragraphs.length < 2 && pageText.length > 200) {
-                        // if no clear paragraphs, split by single newline or just wrap as single para
-                        paragraphs = pageText.split('\n');
+                    
+                    let text = textCache[pageNum];
+                    
+                    if (!text || text.length === 0) {
+                        text = '[No text content on this page]';
                     }
-
+                    
+                    // Split into paragraphs (by double newlines or long breaks)
+                    let paragraphs = text.split(/\n\s*\n/);
+                    
+                    // If no clear paragraphs, create larger chunks
+                    if (paragraphs.length <= 1 && text.length > 500) {
+                        // Split by sentences or create chunks
+                        const sentences = text.split(/[.!?]+/);
+                        paragraphs = [];
+                        let currentPara = '';
+                        
+                        for (let sentence of sentences) {
+                            if (sentence.trim().length > 0) {
+                                if ((currentPara + sentence).length > 300) {
+                                    if (currentPara) paragraphs.push(currentPara.trim());
+                                    currentPara = sentence + '. ';
+                                } else {
+                                    currentPara += sentence + '. ';
+                                }
+                            }
+                        }
+                        if (currentPara) paragraphs.push(currentPara.trim());
+                    }
+                    
+                    // Build HTML
                     let html = '';
                     for (let para of paragraphs) {
                         if (para.trim().length > 0) {
-                            html += `<div class="reading-paragraph">${escapeHtml(para.trim())}</div>`;
+                            // Clean up the paragraph
+                            let cleanPara = para.trim()
+                                .replace(/\s+/g, ' ')  // multiple spaces to single
+                                .replace(/\.+/g, '.')   // multiple dots to single
+                                .replace(/[•●]/g, '')   // remove bullets
+                                .trim();
+                            
+                            if (cleanPara.length > 0) {
+                                html += `<div class="reading-paragraph">${cleanPara}</div>`;
+                            }
                         }
                     }
-
-                    if (html === '') {
-                        html = '<div class="reading-paragraph" style="opacity:0.7;">(no text content on this page)</div>';
+                    
+                    // If still no paragraphs, show raw text
+                    if (!html) {
+                        html = `<div class="reading-paragraph">${text}</div>`;
                     }
-
+                    
                     readingDiv.innerHTML = html;
                     pageNumSpan.innerText = `${pageNum} / ${pdfDoc.numPages}`;
-                } catch (err) {
-                    console.error('render error', err);
+                    
+                } catch (error) {
+                    console.error('Display error:', error);
                     readingDiv.innerHTML = `<div class="loading-indicator">⚠️ Error displaying page ${pageNum}</div>`;
                 }
             }
 
-            // simple escape to avoid XSS (though pdf text should be safe)
-            function escapeHtml(unsafe) {
-                return unsafe.replace(/[&<>"]/g, function(m) {
-                    if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; if(m === '"') return '&quot;';
-                    return m;
-                });
-            }
-
-            // update page indicator (just for consistency)
-            function updatePageIndicator() {
-                if (!pdfDoc) {
-                    pageNumSpan.innerText = '0 / 0';
-                    return;
-                }
-                pageNumSpan.innerText = `${currentPage} / ${pdfDoc.numPages}`;
-            }
-
-            // load PDF from url
+            // Load PDF
             function loadPdfFromUrl(url) {
                 readingDiv.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-pulse"></i> Loading PDF...</div>';
                 pageNumSpan.innerText = '— / —';
-                pageTexts = []; // reset cache
+                textCache = {};
 
                 pdfjsLib.getDocument(url).promise.then(pdf => {
                     pdfDoc = pdf;
                     totalPages = pdf.numPages;
                     currentPage = 1;
-                    // pre-extract first page and render
-                    renderTextPage(currentPage);
+                    displayPage(1);
                 }).catch(error => {
                     console.error('PDF load error:', error);
-                    readingDiv.innerHTML = '<div class="loading-indicator">⚠️ Could not load PDF. Check path or server.</div>';
+                    readingDiv.innerHTML = '<div class="loading-indicator">⚠️ Could not load PDF. Check file path.</div>';
                     pdfDoc = null;
-                    pageNumSpan.innerText = 'error';
                 });
             }
 
-            // ---------- event listeners ----------
+            // Event listeners
             loadBtn.addEventListener('click', () => {
                 const path = pdfInput.value.trim();
-                if (path) {
-                    loadPdfFromUrl(path);
-                } else {
-                    alert('enter a pdf file path');
-                }
+                if (path) loadPdfFromUrl(path);
             });
 
             pdfList.addEventListener('click', (e) => {
                 const li = e.target.closest('li');
-                if (!li) return;
-                const pdfFile = li.getAttribute('data-pdf');
-                if (pdfFile) {
+                if (li) {
+                    const pdfFile = li.getAttribute('data-pdf');
                     pdfInput.value = pdfFile;
                     loadPdfFromUrl(pdfFile);
                     drawer.classList.remove('open');
@@ -581,62 +597,41 @@
             });
 
             prevBtn.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                if (currentPage > 1) {
+                if (pdfDoc && currentPage > 1) {
                     currentPage--;
-                    renderTextPage(currentPage);
+                    displayPage(currentPage);
                 }
             });
 
             nextBtn.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                if (currentPage < pdfDoc.numPages) {
+                if (pdfDoc && currentPage < pdfDoc.numPages) {
                     currentPage++;
-                    renderTextPage(currentPage);
+                    displayPage(currentPage);
                 }
             });
 
-            // ---------- menu drawer ----------
-            function closeDrawer() {
+            // Drawer controls
+            menuToggle.addEventListener('click', () => {
+                drawer.classList.toggle('open');
+                overlay.classList.toggle('active');
+            });
+
+            overlay.addEventListener('click', () => {
                 drawer.classList.remove('open');
                 overlay.classList.remove('active');
-            }
-
-            function openDrawer() {
-                drawer.classList.add('open');
-                overlay.classList.add('active');
-            }
-
-            menuToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (drawer.classList.contains('open')) {
-                    closeDrawer();
-                } else {
-                    openDrawer();
-                }
             });
 
-            overlay.addEventListener('click', closeDrawer);
-
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && drawer.classList.contains('open')) {
-                    closeDrawer();
-                }
-            });
-
-            // ---------- dark mode toggle ----------
+            // Dark mode toggle
             darkToggle.addEventListener('click', () => {
                 const isDark = document.body.classList.toggle('dark');
                 localStorage.setItem('pdf-dark', isDark);
                 darkToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
             });
 
-            // initial load from default value (set-a.pdf)
-            window.addEventListener('load', () => {
-                if (pdfInput.value.trim()) {
-                    loadPdfFromUrl(pdfInput.value.trim());
-                }
-            });
+            // Initial load
+            if (pdfInput.value.trim()) {
+                loadPdfFromUrl(pdfInput.value.trim());
+            }
         })();
     </script>
 </body>
