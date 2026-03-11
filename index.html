@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Reader - सर्वर फ़ाइल व्यूअर</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .file-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .file-path {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .file-path i {
+            color: #1e3c72;
+            font-size: 24px;
+        }
+
+        .file-path input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #495057;
+            background: transparent;
+        }
+
+        .file-path input::placeholder {
+            color: #adb5bd;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1e3c72;
+            border: 2px solid #1e3c72;
+        }
+
+        .btn-secondary:hover {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .content-section {
+            padding: 30px;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #1e3c72;
+            border-bottom: 3px solid #1e3c72;
+        }
+
+        .content-box {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 500px;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .content-box pre {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #495057;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #1e3c72;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .info-message {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        .info-message ol {
+            margin-top: 8px;
+            margin-left: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .pdf-viewer {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF फ़ाइल रीडर</h1>
+            <p>सर्वर फ़ोल्डर से PDF फ़ाइल पढ़ें और देखें</p>
+        </div>
+
+        <div class="file-section">
+            <div class="file-path">
+                <i>📁</i>
+                <input type="text" id="filePath" placeholder="सर्वर पर PDF का पथ (जैसे: /docs/report.pdf या sample.pdf)" value="sample.pdf">
+            </div>
+            
+            <div class="info-message">
+                <strong>📌 निर्देश:</strong> यह टूल सीधे सर्वर फ़ोल्डर से PDF फ़ाइल पढ़ता है। 
+                <ol>
+                    <li><strong>PDF व्यू:</strong> एम्बेडेड PDF व्यूअर में फ़ाइल दिखाता है।</li>
+                    <li><strong>टेक्स्ट व्यू:</strong> PDF से कच्चा टेक्स्ट निकालने की कोशिश करता है (सीमित समर्थन)।</li>
+                    <li><strong>रॉ कंटेंट:</strong> बाइनरी डेटा को हेक्स/टेक्स्ट रूप में दिखाता है।</li>
+                </ol>
+                <p style="margin-top: 8px;">⚠️ ब्राउज़र सुरक्षा नीति के कारण केवल उसी सर्वर की फ़ाइलें पढ़ी जा सकती हैं जहाँ यह पेज होस्ट है। डेमो के लिए 'डेमो PDF' बटन का उपयोग करें।</p>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="readPdfFile()">
+                    <span>📖</span> PDF पढ़ें
+                </button>
+                <button class="btn btn-secondary" onclick="loadDemoPdf()">
+                    <span>📂</span> डेमो PDF देखें
+                </button>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="tab-container">
+                <div class="tab active" onclick="switchTab('pdf')">PDF व्यू</div>
+                <div class="tab" onclick="switchTab('text')">टेक्स्ट व्यू</div>
+                <div class="tab" onclick="switchTab('raw')">रॉ कंटेंट</div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>फ़ाइल लोड हो रही है...</p>
+            </div>
+
+            <div class="error-message" id="error"></div>
+
+            <!-- PDF View (default active) -->
+            <div id="pdfContent" class="content-box">
+                <iframe class="pdf-viewer" id="pdfViewer" src="about:blank"></iframe>
+                <p style="text-align: center; margin-top: 10px; color: #6c757d;">PDF देखने के लिए ऊपर "PDF पढ़ें" बटन दबाएँ</p>
+            </div>
+
+            <!-- Text View (hidden initially) -->
+            <div id="textContent" class="content-box" style="display: none;">
+                <pre id="textPreview">यहाँ PDF से निकाला गया टेक्स्ट दिखेगा (यदि संभव हो)।</pre>
+            </div>
+
+            <!-- Raw Content (hidden initially) -->
+            <div id="rawContent" class="content-box" style="display: none;">
+                <pre id="rawPreview">बाइनरी डेटा का पहला भाग यहाँ दिखेगा...</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF.js library for text extraction (optional but helpful) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    
+    <script>
+        // Set the worker location for PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        let currentTab = 'pdf';  // default
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab styles
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            // Find which tab was clicked
+            const tabs = document.querySelectorAll('.tab');
+            if (tab === 'pdf') tabs[0].classList.add('active');
+            else if (tab === 'text') tabs[1].classList.add('active');
+            else if (tab === 'raw') tabs[2].classList.add('active');
+            
+            // Show/hide content
+            document.getElementById('pdfContent').style.display = tab === 'pdf' ? 'block' : 'none';
+            document.getElementById('textContent').style.display = tab === 'text' ? 'block' : 'none';
+            document.getElementById('rawContent').style.display = tab === 'raw' ? 'block' : 'none';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = '❌ ' + message;
+            errorEl.classList.add('active');
+            setTimeout(() => errorEl.classList.remove('active'), 6000);
+        }
+
+        // Main function to read PDF file from server
+        async function readPdfFile() {
+            const filePath = document.getElementById('filePath').value.trim();
+            
+            if (!filePath) {
+                showError('कृपया PDF फ़ाइल का पथ दर्ज करें');
+                return;
+            }
+
+            // If it's a demo call, load demo instead
+            if (filePath.toLowerCase().includes('demo') || filePath === 'sample.pdf') {
+                loadDemoPdf();
+                return;
+            }
+
+            showLoading(true);
+            clearDisplays();
+
+            try {
+                // Check if file exists and is accessible (HEAD request)
+                const headResponse = await fetch(filePath, { method: 'HEAD' });
+                if (!headResponse.ok) {
+                    throw new Error('फ़ाइल नहीं मिली या एक्सेस नहीं है (404)');
+                }
+
+                const contentType = headResponse.headers.get('content-type') || '';
+                if (!contentType.includes('pdf') && !filePath.toLowerCase().endsWith('.pdf')) {
+                    // Warning but still try to load
+                    console.warn('फ़ाइल PDF नहीं लगती, फिर भी कोशिश कर रहे हैं');
+                }
+
+                // For PDF view, we can directly set the iframe src to the file path.
+                // But to handle authentication/caching, we might use fetch and create blob.
+                // Using fetch + blob ensures we can also do text extraction.
+                const pdfResponse = await fetch(filePath);
+                if (!pdfResponse.ok) throw new Error('PDF डाउनलोड नहीं हो सका');
+                
+                const pdfBlob = await pdfResponse.blob();
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                
+                // Set PDF view
+                document.getElementById('pdfViewer').src = blobUrl;
+                
+                // Try to extract text for other tabs (asynchronous, don't await)
+                extractTextFromPdf(pdfBlob).then(text => {
+                    document.getElementById('textPreview').textContent = text || '(कोई टेक्स्ट नहीं निकाला जा सका)';
+                }).catch(err => {
+                    document.getElementById('textPreview').textContent = 'टेक्स्ट एक्सट्रैक्शन विफल: ' + err.message;
+                });
+
+                // Show raw preview (first few hundred bytes as text/hex)
+                showRawPreview(pdfBlob);
+
+                // If we are on a tab other than pdf, ensure data is shown appropriately
+                if (currentTab !== 'pdf') {
+                    // fine, data populated
+                }
+
+            } catch (error) {
+                console.error(error);
+                showError('PDF पढ़ने में त्रुटि: ' + error.message);
+                // Fallback: show demo content if it's a demo-ish name
+                if (filePath.includes('demo') || filePath === 'sample.pdf') {
+                    loadDemoPdf();
+                } else {
+                    resetIframe();
+                }
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Clear previous content
+        function clearDisplays() {
+            document.getElementById('textPreview').textContent = 'टेक्स्ट निकाला जा रहा है...';
+            document.getElementById('rawPreview').textContent = 'रॉ डेटा लोड हो रहा है...';
+            // Don't clear iframe immediately to avoid flicker, will replace with new blob
+        }
+
+        function resetIframe() {
+            document.getElementById('pdfViewer').src = 'about:blank';
+        }
+
+        // Extract text using PDF.js
+        async function extractTextFromPdf(pdfBlob) {
+            try {
+                const arrayBuffer = await pdfBlob.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n\n';
+                }
+                return fullText.trim() || 'PDF में कोई टेक्स्ट नहीं मिला (यह स्कैन की गई छवि हो सकती है)';
+            } catch (error) {
+                console.warn('PDF.js extraction error:', error);
+                throw new Error('PDF.js टेक्स्ट नहीं निकाल सका');
+            }
+        }
+
+        // Show raw preview (first 500 bytes as text + hex)
+        async function showRawPreview(blob) {
+            try {
+                const arrayBuffer = await blob.slice(0, 800).arrayBuffer(); // first 800 bytes
+                const bytes = new Uint8Array(arrayBuffer);
+                let hexPart = '';
+                let textPart = '';
+                for (let i = 0; i < bytes.length; i++) {
+                    hexPart += bytes[i].toString(16).padStart(2, '0') + ' ';
+                    if ((i + 1) % 16 === 0) hexPart += '\n';
+                    
+                    const char = bytes[i];
+                    if (char >= 32 && char <= 126) textPart += String.fromCharCode(char);
+                    else textPart += '.';
+                }
+                const preview = `बाइनरी डेटा का प्रारंभ (पहले 800 बाइट्स):\n\nहेक्स डंप:\n${hexPart}\n\nASCII प्रतिनिधित्व:\n${textPart}`;
+                document.getElementById('rawPreview').textContent = preview;
+            } catch (e) {
+                document.getElementById('rawPreview').textContent = 'रॉ प्रीव्यू नहीं दिखा सकते: ' + e.message;
+            }
+        }
+
+        // Load a demo PDF (inline generated or sample)
+        function loadDemoPdf() {
+            showLoading(true);
+            clearDisplays();
+            
+            // Create a simple PDF using browser's print or generate using pdf-lib? Instead, we use a data URI with a demo PDF.
+            // For simplicity, we'll generate a simple PDF using pdf.js? Better to use a predefined demo PDF from internet or create a simple one.
+            // Since we cannot guarantee external PDF access, we generate a very basic PDF using jsPDF? Not included.
+            // Instead, we'll use a free demo PDF from the web (with CORS okay) or create a simple representation.
+            // Using a reliable demo PDF from Adobe's sample.
+            const demoPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+            
+            fetch(demoPdfUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error('डेमो PDF उपलब्ध नहीं');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    document.getElementById('pdfViewer').src = blobUrl;
+                    
+                    // Extract text from dummy PDF (it contains "Dummy PDF file" text)
+                    extractTextFromPdf(blob).then(text => {
+                        document.getElementById('textPreview').textContent = text || '(डेमो PDF में टेक्स्ट नहीं)';
+                    }).catch(() => {
+                        document.getElementById('textPreview').textContent = 'डेमो PDF से टेक्स्ट नहीं निकाल सके।';
+                    });
+                    
+                    showRawPreview(blob);
+                    showLoading(false);
+                })
+                .catch(err => {
+                    console.warn('डेमो PDF लोड नहीं हुआ, इनलाइन मैसेज दिखा रहे हैं।');
+                    // Fallback: display message in iframe
+                    const fallbackHtml = `
+                        <html><body style="font-family:sans-serif;padding:2rem;">
+                        <h2>📄 डेमो PDF (सिम्युलेटेड)</h2>
+                        <p>यह एक डेमो PDF फ़ाइल है। असली PDF देखने के लिए कृपया सही सर्वर पथ दें।</p>
+                        <p>आप किसी भी PDF का पथ ऊपर दे सकते हैं, जैसे: <code>/uploads/report.pdf</code></p>
+                        <hr>
+                        <p><b>नमूना सामग्री:</b> यह PDF रीडर सर्वर फ़ोल्डर से फ़ाइलें पढ़ सकता है।</p>
+                        </body></html>
+                    `;
+                    const blob = new Blob([fallbackHtml], { type: 'text/html' });
+                    document.getElementById('pdfViewer').src = URL.createObjectURL(blob);
+                    
+                    document.getElementById('textPreview').textContent = 'यह डेमो PDF है। असली PDF से टेक्स्ट लाने के लिए सही फ़ाइल पथ डालें।';
+                    document.getElementById('rawPreview').textContent = 'डेमो PDF रॉ डेटा (सिम्युलेटेड)';
+                    showLoading(false);
+                });
+        }
+
+        // Initialize with a default demo message, but don't load automatically.
+        window.addEventListener('load', () => {
+            // Set a placeholder info, but don't load PDF automatically to avoid unnecessary requests.
+            document.getElementById('pdfViewer').src = 'about:blank';
+            // Optional: check if server is reachable
+            fetch(window.location.origin, { method: 'HEAD' })
+                .then(() => console.log('सर्वर से कनेक्शन ठीक है'))
+                .catch(() => showError('सर्वर से कनेक्ट नहीं हो पा रहा, लेकिन आप डेमो देख सकते हैं।'));
+        });
+
+        // Also manually set switchTab to handle active state on tab click with event
+        // Overriding the onclick to pass tab name properly
+        document.querySelectorAll('.tab').forEach((tab, index) => {
+            tab.addEventListener('click', (e) => {
+                const tabName = index === 0 ? 'pdf' : (index === 1 ? 'text' : 'raw');
+                switchTab(tabName);
+            });
+        });
+
+        // Small utility: if user types a path and hits enter, trigger read
+        document.getElementById('filePath').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') readPdfFile();
+        });
+
+    </script>
+</body>
+</html>
