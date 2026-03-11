@@ -1,10 +1,11 @@
-// PDF Reader Module
+// PDF Reader Module - set-a.pdf स्पेशल वर्जन
 const pdfReader = (function() {
     // Set the worker location for PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
     // State
     let currentTab = 'pdf';
+    const DEFAULT_PDF = 'set-a.pdf'; // यहाँ set-a.pdf सेट किया गया
 
     // DOM Elements
     const elements = {
@@ -32,8 +33,8 @@ const pdfReader = (function() {
     }
 
     function clearDisplays() {
-        elements.textPreview.textContent = 'टेक्स्ट निकाला जा रहा है...';
-        elements.rawPreview.textContent = 'रॉ डेटा लोड हो रहा है...';
+        elements.textPreview.textContent = 'set-a.pdf से टेक्स्ट निकाला जा रहा है...';
+        elements.rawPreview.textContent = 'set-a.pdf का रॉ डेटा लोड हो रहा है...';
     }
 
     function resetIframe() {
@@ -69,7 +70,7 @@ const pdfReader = (function() {
                 const pageText = textContent.items.map(item => item.str).join(' ');
                 fullText += pageText + '\n\n';
             }
-            return fullText.trim() || 'PDF में कोई टेक्स्ट नहीं मिला (यह स्कैन की गई छवि हो सकती है)';
+            return fullText.trim() || 'set-a.pdf में कोई टेक्स्ट नहीं मिला (यह स्कैन की गई छवि हो सकती है)';
         } catch (error) {
             console.warn('PDF.js extraction error:', error);
             throw new Error('PDF.js टेक्स्ट नहीं निकाल सका');
@@ -93,26 +94,21 @@ const pdfReader = (function() {
                 else textPart += '.';
             }
             
-            const preview = `बाइनरी डेटा का प्रारंभ (पहले 800 बाइट्स):\n\nहेक्स डंप:\n${hexPart}\n\nASCII प्रतिनिधित्व:\n${textPart}`;
+            const preview = `set-a.pdf का बाइनरी डेटा (पहले 800 बाइट्स):\n\nहेक्स डंप:\n${hexPart}\n\nASCII प्रतिनिधित्व:\n${textPart}`;
             elements.rawPreview.textContent = preview;
         } catch (e) {
-            elements.rawPreview.textContent = 'रॉ प्रीव्यू नहीं दिखा सकते: ' + e.message;
+            elements.rawPreview.textContent = 'set-a.pdf का रॉ प्रीव्यू नहीं दिखा सकते: ' + e.message;
         }
     }
 
     // Main function to read PDF file from server
     async function readPdfFile() {
-        const filePath = elements.filePath.value.trim();
+        let filePath = elements.filePath.value.trim();
         
+        // अगर फाइल पथ खाली है तो set-a.pdf इस्तेमाल करें
         if (!filePath) {
-            showError('कृपया PDF फ़ाइल का पथ दर्ज करें');
-            return;
-        }
-
-        // If it's a demo call, load demo instead
-        if (filePath.toLowerCase().includes('demo') || filePath === 'sample.pdf') {
-            loadDemoPdf();
-            return;
+            filePath = DEFAULT_PDF;
+            elements.filePath.value = filePath;
         }
 
         showLoading(true);
@@ -122,7 +118,7 @@ const pdfReader = (function() {
             // Check if file exists and is accessible
             const headResponse = await fetch(filePath, { method: 'HEAD' });
             if (!headResponse.ok) {
-                throw new Error('फ़ाइल नहीं मिली या एक्सेस नहीं है (404)');
+                throw new Error(`set-a.pdf नहीं मिली (${headResponse.status}) - कृपया जाँच करें कि फाइल सर्वर पर मौजूद है`);
             }
 
             const contentType = headResponse.headers.get('content-type') || '';
@@ -132,7 +128,7 @@ const pdfReader = (function() {
 
             // Fetch the PDF
             const pdfResponse = await fetch(filePath);
-            if (!pdfResponse.ok) throw new Error('PDF डाउनलोड नहीं हो सका');
+            if (!pdfResponse.ok) throw new Error('set-a.pdf डाउनलोड नहीं हो सका');
             
             const pdfBlob = await pdfResponse.blob();
             const blobUrl = URL.createObjectURL(pdfBlob);
@@ -142,9 +138,9 @@ const pdfReader = (function() {
             
             // Try to extract text for other tabs
             extractTextFromPdf(pdfBlob).then(text => {
-                elements.textPreview.textContent = text || '(कोई टेक्स्ट नहीं निकाला जा सका)';
+                elements.textPreview.textContent = text || '(set-a.pdf से टेक्स्ट नहीं निकाला जा सका)';
             }).catch(err => {
-                elements.textPreview.textContent = 'टेक्स्ट एक्सट्रैक्शन विफल: ' + err.message;
+                elements.textPreview.textContent = 'set-a.pdf से टेक्स्ट निकालने में विफल: ' + err.message;
             });
 
             // Show raw preview
@@ -152,10 +148,10 @@ const pdfReader = (function() {
 
         } catch (error) {
             console.error(error);
-            showError('PDF पढ़ने में त्रुटि: ' + error.message);
+            showError('set-a.pdf पढ़ने में त्रुटि: ' + error.message);
             
-            // Fallback: show demo content if it's a demo-ish name
-            if (filePath.includes('demo') || filePath === 'sample.pdf') {
+            // डेमो विकल्प दें
+            if (confirm('set-a.pdf नहीं मिली। क्या आप डेमो PDF देखना चाहेंगे?')) {
                 loadDemoPdf();
             } else {
                 resetIframe();
@@ -165,7 +161,7 @@ const pdfReader = (function() {
         }
     }
 
-    // Load demo PDF
+    // Load demo PDF (अगर set-a.pdf नहीं मिलती)
     function loadDemoPdf() {
         showLoading(true);
         clearDisplays();
@@ -181,36 +177,59 @@ const pdfReader = (function() {
                 const blobUrl = URL.createObjectURL(blob);
                 elements.pdfViewer.src = blobUrl;
                 
-                // Extract text from dummy PDF
                 extractTextFromPdf(blob).then(text => {
-                    elements.textPreview.textContent = text || '(डेमो PDF में टेक्स्ट नहीं)';
+                    elements.textPreview.textContent = text || '(डेमो PDF में कोई टेक्स्ट नहीं)';
                 }).catch(() => {
                     elements.textPreview.textContent = 'डेमो PDF से टेक्स्ट नहीं निकाल सके।';
                 });
                 
                 showRawPreview(blob);
                 showLoading(false);
+                
+                showError('ध्यान दें: set-a.pdf नहीं मिली, डेमो PDF दिखाई जा रही है');
             })
             .catch(err => {
-                console.warn('डेमो PDF लोड नहीं हुआ, इनलाइन मैसेज दिखा रहे हैं।');
-                
-                // Fallback: display message in iframe
+                // फॉलबैक मैसेज
                 const fallbackHtml = `
                     <html><body style="font-family:sans-serif;padding:2rem;">
-                    <h2>📄 डेमो PDF (सिम्युलेटेड)</h2>
-                    <p>यह एक डेमो PDF फ़ाइल है। असली PDF देखने के लिए कृपया सही सर्वर पथ दें।</p>
-                    <p>आप किसी भी PDF का पथ ऊपर दे सकते हैं, जैसे: <code>/uploads/report.pdf</code></p>
+                    <h2>⚠️ set-a.pdf नहीं मिली</h2>
+                    <p>कृपया निम्नलिखित जाँच करें:</p>
+                    <ul>
+                        <li>set-a.pdf आपके सर्वर के रूट फ़ोल्डर में है?</li>
+                        <li>फ़ाइल का नाम सही है? (set-a.pdf)</li>
+                        <li>फ़ाइल पढ़ने की अनुमति है?</li>
+                    </ul>
+                    <p><strong>फ़ाइल पाथ:</strong> /set-a.pdf</p>
                     <hr>
-                    <p><b>नमूना सामग्री:</b> यह PDF रीडर सर्वर फ़ोल्डर से फ़ाइलें पढ़ सकता है।</p>
+                    <p>आप ऊपर दिए गए टेक्स्ट बॉक्स में दूसरी PDF का पाथ डाल सकते हैं।</p>
                     </body></html>
                 `;
                 const blob = new Blob([fallbackHtml], { type: 'text/html' });
                 elements.pdfViewer.src = URL.createObjectURL(blob);
                 
-                elements.textPreview.textContent = 'यह डेमो PDF है। असली PDF से टेक्स्ट लाने के लिए सही फ़ाइल पथ डालें।';
-                elements.rawPreview.textContent = 'डेमो PDF रॉ डेटा (सिम्युलेटेड)';
+                elements.textPreview.textContent = 'set-a.pdf नहीं मिली। कृपया फ़ाइल अपलोड करें या सही पाथ दें।';
+                elements.rawPreview.textContent = 'set-a.pdf उपलब्ध नहीं';
                 showLoading(false);
             });
+    }
+
+    // ऑटो-लोड set-a.pdf जब पेज खुले
+    function autoLoadSetAPdf() {
+        // थोड़ी देर बाद ऑटो-लोड करें ताकि सब कुछ लोड हो जाए
+        setTimeout(() => {
+            // चेक करें कि set-a.pdf लोड हो सकती है
+            fetch('set-a.pdf', { method: 'HEAD' })
+                .then(res => {
+                    if (res.ok) {
+                        readPdfFile(); // ऑटो-लोड set-a.pdf
+                    } else {
+                        console.log('set-a.pdf नहीं मिली, ऑटो-लोड नहीं होगी');
+                    }
+                })
+                .catch(() => {
+                    console.log('set-a.pdf चेक नहीं कर सके');
+                });
+        }, 500);
     }
 
     // Initialize event listeners
@@ -230,11 +249,14 @@ const pdfReader = (function() {
 
         // Initial iframe state
         elements.pdfViewer.src = 'about:blank';
+        
+        // set-a.pdf ऑटो-लोड करें
+        autoLoadSetAPdf();
 
         // Check server connectivity
         fetch(window.location.origin, { method: 'HEAD' })
             .then(() => console.log('सर्वर से कनेक्शन ठीक है'))
-            .catch(() => showError('सर्वर से कनेक्ट नहीं हो पा रहा, लेकिन आप डेमो देख सकते हैं।'));
+            .catch(() => showError('सर्वर से कनेक्ट नहीं हो पा रहा, set-a.pdf नहीं मिलेगी'));
     }
 
     // Initialize when DOM is ready
