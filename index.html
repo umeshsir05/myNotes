@@ -3,35 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Reader - सर्वर फ़ाइल व्यूअर</title>
+    <title>PDF Reader - set-a.pdf व्यूअर</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📄 PDF फ़ाइल रीडर</h1>
-            <p>सर्वर फ़ोल्डर से PDF फ़ाइल पढ़ें और देखें</p>
+            <h1>📄 PDF फ़ाइल रीडर - set-a.pdf</h1>
+            <p>सर्वर फ़ोल्डर से set-a.pdf पढ़ें और देखें</p>
         </div>
 
         <div class="file-section">
             <div class="file-path">
                 <i>📁</i>
-                <input type="text" id="filePath" placeholder="सर्वर पर PDF का पथ (जैसे: /docs/report.pdf या sample.pdf)" value="set-a.pdf">
+                <input type="text" id="filePath" placeholder="सर्वर पर PDF का पथ" value="set-a.pdf">
             </div>
             
             <div class="info-message">
-                <strong>📌 निर्देश:</strong> यह टूल सीधे सर्वर फ़ोल्डर से PDF फ़ाइल पढ़ता है। 
+                <strong>📌 निर्देश:</strong> यह टूल सीधे सर्वर फ़ोल्डर से set-a.pdf फ़ाइल पढ़ता है। 
                 <ol>
                     <li><strong>PDF व्यू:</strong> एम्बेडेड PDF व्यूअर में फ़ाइल दिखाता है।</li>
-                    <li><strong>टेक्स्ट व्यू:</strong> PDF से कच्चा टेक्स्ट निकालने की कोशिश करता है (सीमित समर्थन)।</li>
+                    <li><strong>टेक्स्ट व्यू:</strong> PDF से कच्चा टेक्स्ट निकालता है।</li>
                     <li><strong>रॉ कंटेंट:</strong> बाइनरी डेटा को हेक्स/टेक्स्ट रूप में दिखाता है।</li>
                 </ol>
-                <p style="margin-top: 8px;">⚠️ ब्राउज़र सुरक्षा नीति के कारण केवल उसी सर्वर की फ़ाइलें पढ़ी जा सकती हैं जहाँ यह पेज होस्ट है। डेमो के लिए 'डेमो PDF' बटन का उपयोग करें।</p>
+                <p style="margin-top: 8px; color: #0c5460; background: #d1ecf1; padding: 10px; border-radius: 5px;">
+                    <strong>⚠️ ध्यान दें:</strong> set-a.pdf आपके सर्वर के रूट फ़ोल्डर में होनी चाहिए!
+                </p>
             </div>
 
             <div class="button-group">
                 <button class="btn btn-primary" onclick="pdfReader.readPdfFile()">
-                    <span>📖</span> PDF पढ़ें
+                    <span>📖</span> set-a.pdf पढ़ें
                 </button>
                 <button class="btn btn-secondary" onclick="pdfReader.loadDemoPdf()">
                     <span>📂</span> डेमो PDF देखें
@@ -48,7 +50,7 @@
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>फ़ाइल लोड हो रही है...</p>
+                <p>set-a.pdf लोड हो रही है...</p>
             </div>
 
             <div class="error-message" id="error"></div>
@@ -56,17 +58,19 @@
             <!-- PDF View (default active) -->
             <div id="pdfContent" class="content-box">
                 <iframe class="pdf-viewer" id="pdfViewer" src="about:blank"></iframe>
-                <p style="text-align: center; margin-top: 10px; color: #6c757d;">PDF देखने के लिए ऊपर "PDF पढ़ें" बटन दबाएँ</p>
+                <p style="text-align: center; margin-top: 10px; color: #6c757d;">
+                    set-a.pdf देखने के लिए ऊपर "set-a.pdf पढ़ें" बटन दबाएँ
+                </p>
             </div>
 
             <!-- Text View (hidden initially) -->
             <div id="textContent" class="content-box" style="display: none;">
-                <pre id="textPreview">यहाँ PDF से निकाला गया टेक्स्ट दिखेगा (यदि संभव हो)।</pre>
+                <pre id="textPreview">set-a.pdf से टेक्स्ट निकाला जा रहा है...</pre>
             </div>
 
             <!-- Raw Content (hidden initially) -->
             <div id="rawContent" class="content-box" style="display: none;">
-                <pre id="rawPreview">बाइनरी डेटा का पहला भाग यहाँ दिखेगा...</pre>
+                <pre id="rawPreview">set-a.pdf का रॉ डेटा यहाँ दिखेगा...</pre>
             </div>
         </div>
     </div>
