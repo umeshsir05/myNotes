@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>PDF • fullpage reader</title>
+    <title>PDF • large reading view</title>
     <!-- pdf.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <!-- Font Awesome for icons -->
@@ -31,6 +31,8 @@
             --icon-color: #475569;
             --pdf-bg: #d1d5db30;
             --input-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text-reading: #1e293b;
         }
 
         body.dark {
@@ -46,6 +48,8 @@
             --icon-color: #94a3b8;
             --pdf-bg: #1e293b;
             --input-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-reading: #e2e8f0;
         }
 
         body {
@@ -214,19 +218,18 @@
             text-align: center;
         }
 
-        /* ---- main content (full page view, no zoom) ---- */
+        /* ---- main content (reading view with large text) ---- */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             padding: 1rem 1rem 1.5rem;
-            max-width: 100%;
-            margin: 0;
+            max-width: 900px;  /* optimal line length for reading */
+            margin: 0 auto;
             width: 100%;
-            height: 100%;
         }
 
-        /* simple page control bar (only prev/next) */
+        /* page control bar (only prev/next) */
         .pdf-controls {
             display: flex;
             align-items: center;
@@ -269,37 +272,42 @@
             text-align: center;
         }
 
-        /* FULL PAGE PDF VIEWER — fills remaining space */
-        .pdf-viewer {
-            background-color: var(--pdf-bg);
+        /* READING VIEW CARD - large text */
+        .reading-container {
+            background-color: var(--card-bg);
             border-radius: 32px;
-            padding: 1rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 2rem 1.8rem;
             border: 1px solid var(--border-light);
             box-shadow: var(--shadow);
             flex: 1;
-            min-height: 0;  /* important for flex child */
             width: 100%;
+            overflow-y: auto;
+            min-height: 400px;
+            max-height: 70vh;
+            line-height: 1.7;
         }
 
-        #pdf-canvas {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            background: white;
+        #readingContent {
+            font-size: 1.5rem;      /* LARGE TEXT */
+            font-weight: 400;
+            color: var(--text-reading);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+
+        /* style for paragraphs to look like reading view */
+        .reading-paragraph {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            line-height: 1.7;
         }
 
         .loading-indicator {
             color: var(--text-secondary);
             text-align: center;
-            padding: 2rem;
-            font-size: 1.1rem;
+            padding: 3rem;
+            font-size: 1.3rem;
         }
 
         /* file input row */
@@ -348,13 +356,15 @@
         }
 
         /* responsive tweaks */
-        @media (max-width: 500px) {
+        @media (max-width: 600px) {
             .app-title span { display: none; }
             .app-title i { margin-right: 0; }
             .file-selector-row { flex-direction: column; align-items: stretch; }
             .load-btn { justify-content: center; }
             .pdf-controls { gap: 0.5rem; }
-            .page-info { min-width: 70px; padding: 0.4rem 0.8rem; }
+            .page-info { min-width: 70px; padding: 0.4rem 0.6rem; }
+            .reading-container { padding: 1.5rem 1rem; }
+            #readingContent { font-size: 1.3rem; }
         }
     </style>
 </head>
@@ -365,7 +375,7 @@
             <i class="fas fa-bars"></i>
         </button>
         <div class="app-title">
-            <i class="fas fa-file-pdf"></i> <span>Fullpage PDF</span>
+            <i class="fas fa-file-pdf"></i> <span>PDF Reader View</span>
         </div>
         <button class="dark-toggle" id="darkToggle" aria-label="Dark mode">
             <i class="fas fa-moon"></i>
@@ -380,7 +390,7 @@
             <span>Server PDFs</span>
         </div>
         <ul class="pdf-list" id="pdfList">
-            <li data-pdf="set-a.pdf"><i class="fas fa-file-pdf"></i> sample.pdf</li>
+            <li data-pdf="set-a.pdf"><i class="fas fa-file-pdf"></i> set-a.pdf</li>
             <li data-pdf="manual.pdf"><i class="fas fa-file-pdf"></i> manual.pdf</li>
             <li data-pdf="report-2025.pdf"><i class="fas fa-file-pdf"></i> report-2025.pdf</li>
             <li data-pdf="brochure.pdf"><i class="fas fa-file-pdf"></i> brochure.pdf</li>
@@ -390,7 +400,7 @@
         </div>
     </nav>
 
-    <!-- main content area (full page view) -->
+    <!-- main content area (reading view) -->
     <main class="main-content">
         <!-- custom file input row -->
         <div class="file-selector-row">
@@ -398,17 +408,20 @@
             <button class="load-btn" id="loadPdfBtn"><i class="fas fa-cloud-download-alt"></i> Load PDF</button>
         </div>
 
-        <!-- simple paging controls (NO zoom buttons) -->
+        <!-- simple paging controls (prev/next page) -->
         <div class="pdf-controls">
             <button class="ctrl-btn" id="prevPage" title="Previous page"><i class="fas fa-chevron-left"></i></button>
             <span class="page-info" id="pageNum">1 / 1</span>
             <button class="ctrl-btn" id="nextPage" title="Next page"><i class="fas fa-chevron-right"></i></button>
         </div>
 
-        <!-- FULL PAGE PDF canvas container (fills space) -->
-        <div class="pdf-viewer">
-            <canvas id="pdf-canvas"></canvas>
-            <div id="loadingMessage" class="loading-indicator" style="display: none;">Loading PDF ...</div>
+        <!-- READING VIEW with LARGE TEXT -->
+        <div class="reading-container">
+            <div id="readingContent" class="reading-content">
+                <div class="loading-indicator" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                    <i class="fas fa-book-open" style="margin-right: 1rem;"></i> Load a PDF to start reading
+                </div>
+            </div>
         </div>
     </main>
 
@@ -418,8 +431,7 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
             // ---------- DOM elements ----------
-            const canvas = document.getElementById('pdf-canvas');
-            const ctx = canvas.getContext('2d');
+            const readingDiv = document.getElementById('readingContent');
             const pageNumSpan = document.getElementById('pageNum');
             const prevBtn = document.getElementById('prevPage');
             const nextBtn = document.getElementById('nextPage');
@@ -430,14 +442,12 @@
             const drawer = document.getElementById('drawer');
             const overlay = document.getElementById('drawerOverlay');
             const darkToggle = document.getElementById('darkToggle');
-            const loadingMsg = document.getElementById('loadingMessage');
 
             // ---------- state ----------
             let pdfDoc = null;
             let currentPage = 1;
             let totalPages = 1;
-            // scale will be dynamically recalculated to fit container (full page)
-            // we store only the last used scale for page uniformity, but we recalc on every render
+            let pageTexts = [];      // cache extracted text per page
 
             // dark mode handling
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -448,75 +458,79 @@
                 darkToggle.innerHTML = '<i class="fas fa-moon"></i>';
             }
 
-            // ---------- helper: get optimal scale to fit container (full page) ----------
-            function calculateFitScale(pageViewport) {
-                const container = document.querySelector('.pdf-viewer');
-                if (!container) return 1.0;
-
-                // Get container dimensions (with a little breathing margin)
-                const containerStyle = window.getComputedStyle(container);
-                const containerWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
-                const containerHeight = container.clientHeight - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom);
-
-                // Page original dimensions (in PDF points, 1 point = 1/72 inch)
-                const pageWidth = pageViewport.width;
-                const pageHeight = pageViewport.height;
-
-                // Calculate scale to fit both dimensions
-                const scaleX = (containerWidth - 20) / pageWidth;    // small extra margin
-                const scaleY = (containerHeight - 20) / pageHeight;
-
-                // Use the smaller scale to ensure full page is visible
-                return Math.min(scaleX, scaleY, 2.5); // cap at 2.5 to avoid insane sizes on huge containers
+            // ---------- helper: extract text from a page ----------
+            async function extractPageText(pageNum) {
+                if (!pdfDoc) return '';
+                try {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    // join text items with spaces, preserve some layout with newlines
+                    let lastY = null;
+                    let text = '';
+                    for (let item of textContent.items) {
+                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                            text += '\n'; // new line when y changes significantly
+                        }
+                        text += item.str + ' ';
+                        lastY = item.transform[5];
+                    }
+                    // clean up multiple spaces and break into paragraphs
+                    return text.replace(/\s+/g, ' ').replace(/\n /g, '\n').trim();
+                } catch (e) {
+                    console.warn('text extraction error', e);
+                    return '[could not extract text from this page]';
+                }
             }
 
-            // ---------- render page with full fit ----------
-            function renderPage(num) {
+            // ---------- render current page as large text ----------
+            async function renderTextPage(pageNum) {
                 if (!pdfDoc) return;
 
-                loadingMsg.style.display = 'block';
-                canvas.style.opacity = '0.3';
+                readingDiv.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-pulse"></i> Loading page content...</div>';
 
-                pdfDoc.getPage(num).then(page => {
-                    // Get viewport at a temporary scale just to get dimensions
-                    const dummyViewport = page.getViewport({ scale: 1.0 });
-                    // Compute optimal scale to fit the container
-                    const fitScale = calculateFitScale(dummyViewport);
-                    // Now get the actual viewport with the fitted scale
-                    const viewport = page.getViewport({ scale: fitScale });
+                try {
+                    // if we already cached, use it; else extract
+                    if (!pageTexts[pageNum]) {
+                        pageTexts[pageNum] = await extractPageText(pageNum);
+                    }
+                    let pageText = pageTexts[pageNum];
 
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
+                    // format as paragraphs for better readability (split by double newlines)
+                    let paragraphs = pageText.split(/\n\s*\n/);
+                    if (paragraphs.length < 2 && pageText.length > 200) {
+                        // if no clear paragraphs, split by single newline or just wrap as single para
+                        paragraphs = pageText.split('\n');
+                    }
 
-                    const renderContext = {
-                        canvasContext: ctx,
-                        viewport: viewport
-                    };
+                    let html = '';
+                    for (let para of paragraphs) {
+                        if (para.trim().length > 0) {
+                            html += `<div class="reading-paragraph">${escapeHtml(para.trim())}</div>`;
+                        }
+                    }
 
-                    return page.render(renderContext).promise.then(() => {
-                        loadingMsg.style.display = 'none';
-                        canvas.style.opacity = '1';
-                        pageNumSpan.innerText = `${num} / ${pdfDoc.numPages}`;
-                    });
-                }).catch(err => {
-                    console.warn('render error', err);
-                    loadingMsg.innerText = 'Error rendering page.';
-                    canvas.style.opacity = '1';
+                    if (html === '') {
+                        html = '<div class="reading-paragraph" style="opacity:0.7;">(no text content on this page)</div>';
+                    }
+
+                    readingDiv.innerHTML = html;
+                    pageNumSpan.innerText = `${pageNum} / ${pdfDoc.numPages}`;
+                } catch (err) {
+                    console.error('render error', err);
+                    readingDiv.innerHTML = `<div class="loading-indicator">⚠️ Error displaying page ${pageNum}</div>`;
+                }
+            }
+
+            // simple escape to avoid XSS (though pdf text should be safe)
+            function escapeHtml(unsafe) {
+                return unsafe.replace(/[&<>"]/g, function(m) {
+                    if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; if(m === '"') return '&quot;';
+                    return m;
                 });
             }
 
-            // force re-render on container resize (optional, but nice)
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                if (!pdfDoc) return;
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    renderPage(currentPage);
-                }, 150);
-            });
-
-            // update controls (page indicator)
-            function updateControls() {
+            // update page indicator (just for consistency)
+            function updatePageIndicator() {
                 if (!pdfDoc) {
                     pageNumSpan.innerText = '0 / 0';
                     return;
@@ -526,22 +540,20 @@
 
             // load PDF from url
             function loadPdfFromUrl(url) {
-                loadingMsg.style.display = 'block';
-                canvas.style.opacity = '0.2';
+                readingDiv.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-pulse"></i> Loading PDF...</div>';
                 pageNumSpan.innerText = '— / —';
+                pageTexts = []; // reset cache
 
                 pdfjsLib.getDocument(url).promise.then(pdf => {
                     pdfDoc = pdf;
                     totalPages = pdf.numPages;
                     currentPage = 1;
-                    renderPage(currentPage);
-                    updateControls();
+                    // pre-extract first page and render
+                    renderTextPage(currentPage);
                 }).catch(error => {
                     console.error('PDF load error:', error);
-                    loadingMsg.style.display = 'block';
-                    loadingMsg.innerText = '⚠️ Could not load PDF. Check path or server.';
+                    readingDiv.innerHTML = '<div class="loading-indicator">⚠️ Could not load PDF. Check path or server.</div>';
                     pdfDoc = null;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                     pageNumSpan.innerText = 'error';
                 });
             }
@@ -572,7 +584,7 @@
                 if (!pdfDoc) return;
                 if (currentPage > 1) {
                     currentPage--;
-                    renderPage(currentPage);
+                    renderTextPage(currentPage);
                 }
             });
 
@@ -580,7 +592,7 @@
                 if (!pdfDoc) return;
                 if (currentPage < pdfDoc.numPages) {
                     currentPage++;
-                    renderPage(currentPage);
+                    renderTextPage(currentPage);
                 }
             });
 
@@ -617,17 +629,14 @@
                 const isDark = document.body.classList.toggle('dark');
                 localStorage.setItem('pdf-dark', isDark);
                 darkToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-                // slight delay to let container recalc, then re-render page with new background
-                if (pdfDoc) setTimeout(() => renderPage(currentPage), 20);
             });
 
-            // initial load from default value (sample.pdf)
+            // initial load from default value (set-a.pdf)
             window.addEventListener('load', () => {
                 if (pdfInput.value.trim()) {
                     loadPdfFromUrl(pdfInput.value.trim());
                 }
             });
-
         })();
     </script>
 </body>
