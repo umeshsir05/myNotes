@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>PDF • server reader</title>
-    <!-- pdf.js from CDN (Mozilla's official build) -->
+    <title>PDF • fullpage reader</title>
+    <!-- pdf.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <!-- Font Awesome for menu/dark mode icons -->
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* RESET + GLOBAL VARIABLES */
@@ -140,7 +140,7 @@
         .drawer {
             position: fixed;
             top: 0;
-            left: -280px; /* hidden by default */
+            left: -280px;
             width: 260px;
             height: 100%;
             background-color: var(--nav-bg);
@@ -214,38 +214,40 @@
             text-align: center;
         }
 
-        /* ---- main content (PDF viewer) ---- */
+        /* ---- main content (full page view, no zoom) ---- */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             padding: 1rem 1rem 1.5rem;
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 100%;
+            margin: 0;
             width: 100%;
+            height: 100%;
         }
 
+        /* simple page control bar (only prev/next) */
         .pdf-controls {
             display: flex;
-            flex-wrap: wrap;
             align-items: center;
-            gap: 0.75rem;
+            justify-content: center;
+            gap: 1.5rem;
             background-color: var(--surface);
-            padding: 0.8rem 1rem;
-            border-radius: 40px;
-            margin-bottom: 1.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 60px;
+            margin: 0 auto 1.2rem auto;
             box-shadow: var(--shadow);
             border: 1px solid var(--border-light);
-            justify-content: center;
+            width: fit-content;
         }
 
         .ctrl-btn {
             background: transparent;
             border: none;
             color: var(--icon-color);
-            font-size: 1.2rem;
-            width: 2.5rem;
-            height: 2.5rem;
+            font-size: 1.3rem;
+            width: 2.8rem;
+            height: 2.8rem;
             border-radius: 50%;
             cursor: pointer;
             display: inline-flex;
@@ -256,35 +258,41 @@
             background-color: var(--border-light);
         }
         .page-info {
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-primary);
             background-color: var(--bg-page);
-            padding: 0.4rem 1.2rem;
+            padding: 0.4rem 1.5rem;
             border-radius: 40px;
-            font-size: 0.95rem;
+            font-size: 1rem;
             border: 1px solid var(--border-light);
-            white-space: nowrap;
+            min-width: 100px;
+            text-align: center;
         }
 
-        /* PDF canvas container */
+        /* FULL PAGE PDF VIEWER — fills remaining space */
         .pdf-viewer {
             background-color: var(--pdf-bg);
             border-radius: 32px;
-            padding: 1.5rem 0.5rem;
+            padding: 1rem;
             display: flex;
             justify-content: center;
             align-items: center;
             border: 1px solid var(--border-light);
             box-shadow: var(--shadow);
-            min-height: 60vh;
+            flex: 1;
+            min-height: 0;  /* important for flex child */
+            width: 100%;
         }
 
         #pdf-canvas {
             max-width: 100%;
+            max-height: 100%;
+            width: auto;
             height: auto;
+            object-fit: contain;
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            background: white; /* pdf pages white */
+            background: white;
         }
 
         .loading-indicator {
@@ -294,6 +302,7 @@
             font-size: 1.1rem;
         }
 
+        /* file input row */
         .file-selector-row {
             display: flex;
             gap: 0.8rem;
@@ -344,7 +353,8 @@
             .app-title i { margin-right: 0; }
             .file-selector-row { flex-direction: column; align-items: stretch; }
             .load-btn { justify-content: center; }
-            .pdf-controls { flex-wrap: wrap; }
+            .pdf-controls { gap: 0.5rem; }
+            .page-info { min-width: 70px; padding: 0.4rem 0.8rem; }
         }
     </style>
 </head>
@@ -355,7 +365,7 @@
             <i class="fas fa-bars"></i>
         </button>
         <div class="app-title">
-            <i class="fas fa-file-pdf"></i> <span>PDF server reader</span>
+            <i class="fas fa-file-pdf"></i> <span>Fullpage PDF</span>
         </div>
         <button class="dark-toggle" id="darkToggle" aria-label="Dark mode">
             <i class="fas fa-moon"></i>
@@ -370,35 +380,32 @@
             <span>Server PDFs</span>
         </div>
         <ul class="pdf-list" id="pdfList">
-            <!-- example pdf entries (relative to server) -->
             <li data-pdf="sample.pdf"><i class="fas fa-file-pdf"></i> sample.pdf</li>
             <li data-pdf="manual.pdf"><i class="fas fa-file-pdf"></i> manual.pdf</li>
             <li data-pdf="report-2025.pdf"><i class="fas fa-file-pdf"></i> report-2025.pdf</li>
             <li data-pdf="brochure.pdf"><i class="fas fa-file-pdf"></i> brochure.pdf</li>
         </ul>
         <div class="drawer-footer">
-            <i class="fas fa-database"></i> files from /server root
+            <i class="fas fa-database"></i> files from server root
         </div>
     </nav>
 
-    <!-- main content area -->
+    <!-- main content area (full page view) -->
     <main class="main-content">
-        <!-- custom file input row (manual path) -->
+        <!-- custom file input row -->
         <div class="file-selector-row">
-            <input type="text" id="pdfInput" placeholder="set-a.pdf" value="set-a.pdf">
+            <input type="text" id="pdfInput" placeholder="e.g. ./sample.pdf or /docs/manual.pdf" value="sample.pdf">
             <button class="load-btn" id="loadPdfBtn"><i class="fas fa-cloud-download-alt"></i> Load PDF</button>
         </div>
 
-        <!-- paging controls -->
+        <!-- simple paging controls (NO zoom buttons) -->
         <div class="pdf-controls">
             <button class="ctrl-btn" id="prevPage" title="Previous page"><i class="fas fa-chevron-left"></i></button>
             <span class="page-info" id="pageNum">1 / 1</span>
             <button class="ctrl-btn" id="nextPage" title="Next page"><i class="fas fa-chevron-right"></i></button>
-            <button class="ctrl-btn" id="zoomOut" title="Zoom out"><i class="fas fa-search-minus"></i></button>
-            <button class="ctrl-btn" id="zoomIn" title="Zoom in"><i class="fas fa-search-plus"></i></button>
         </div>
 
-        <!-- PDF canvas wrapper -->
+        <!-- FULL PAGE PDF canvas container (fills space) -->
         <div class="pdf-viewer">
             <canvas id="pdf-canvas"></canvas>
             <div id="loadingMessage" class="loading-indicator" style="display: none;">Loading PDF ...</div>
@@ -416,8 +423,6 @@
             const pageNumSpan = document.getElementById('pageNum');
             const prevBtn = document.getElementById('prevPage');
             const nextBtn = document.getElementById('nextPage');
-            const zoomInBtn = document.getElementById('zoomIn');
-            const zoomOutBtn = document.getElementById('zoomOut');
             const pdfInput = document.getElementById('pdfInput');
             const loadBtn = document.getElementById('loadPdfBtn');
             const pdfList = document.getElementById('pdfList');
@@ -431,10 +436,10 @@
             let pdfDoc = null;
             let currentPage = 1;
             let totalPages = 1;
-            let scale = 1.2;           // base scale (fits most screens)
-            const defaultScale = 1.2;
+            // scale will be dynamically recalculated to fit container (full page)
+            // we store only the last used scale for page uniformity, but we recalc on every render
 
-            // dark mode detection / persistence
+            // dark mode handling
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             if (localStorage.getItem('pdf-dark') === 'true' || (!localStorage.getItem('pdf-dark') && prefersDark)) {
                 document.body.classList.add('dark');
@@ -443,15 +448,43 @@
                 darkToggle.innerHTML = '<i class="fas fa-moon"></i>';
             }
 
-            // ---------- helper: render page ----------
-            function renderPage(num, scaleOverride = null) {
+            // ---------- helper: get optimal scale to fit container (full page) ----------
+            function calculateFitScale(pageViewport) {
+                const container = document.querySelector('.pdf-viewer');
+                if (!container) return 1.0;
+
+                // Get container dimensions (with a little breathing margin)
+                const containerStyle = window.getComputedStyle(container);
+                const containerWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
+                const containerHeight = container.clientHeight - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom);
+
+                // Page original dimensions (in PDF points, 1 point = 1/72 inch)
+                const pageWidth = pageViewport.width;
+                const pageHeight = pageViewport.height;
+
+                // Calculate scale to fit both dimensions
+                const scaleX = (containerWidth - 20) / pageWidth;    // small extra margin
+                const scaleY = (containerHeight - 20) / pageHeight;
+
+                // Use the smaller scale to ensure full page is visible
+                return Math.min(scaleX, scaleY, 2.5); // cap at 2.5 to avoid insane sizes on huge containers
+            }
+
+            // ---------- render page with full fit ----------
+            function renderPage(num) {
                 if (!pdfDoc) return;
-                const renderScale = scaleOverride !== null ? scaleOverride : scale;
+
                 loadingMsg.style.display = 'block';
                 canvas.style.opacity = '0.3';
 
                 pdfDoc.getPage(num).then(page => {
-                    const viewport = page.getViewport({ scale: renderScale });
+                    // Get viewport at a temporary scale just to get dimensions
+                    const dummyViewport = page.getViewport({ scale: 1.0 });
+                    // Compute optimal scale to fit the container
+                    const fitScale = calculateFitScale(dummyViewport);
+                    // Now get the actual viewport with the fitted scale
+                    const viewport = page.getViewport({ scale: fitScale });
+
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
 
@@ -460,22 +493,29 @@
                         viewport: viewport
                     };
 
-                    const renderTask = page.render(renderContext);
-                    renderTask.promise.then(() => {
+                    return page.render(renderContext).promise.then(() => {
                         loadingMsg.style.display = 'none';
                         canvas.style.opacity = '1';
                         pageNumSpan.innerText = `${num} / ${pdfDoc.numPages}`;
-                    }).catch(err => {
-                        console.warn('render error', err);
-                        loadingMsg.innerText = 'Error rendering page.';
                     });
                 }).catch(err => {
-                    console.error('page error', err);
-                    loadingMsg.innerText = 'Failed to load page.';
+                    console.warn('render error', err);
+                    loadingMsg.innerText = 'Error rendering page.';
+                    canvas.style.opacity = '1';
                 });
             }
 
-            // update buttons & page info
+            // force re-render on container resize (optional, but nice)
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                if (!pdfDoc) return;
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    renderPage(currentPage);
+                }, 150);
+            });
+
+            // update controls (page indicator)
             function updateControls() {
                 if (!pdfDoc) {
                     pageNumSpan.innerText = '0 / 0';
@@ -484,7 +524,7 @@
                 pageNumSpan.innerText = `${currentPage} / ${pdfDoc.numPages}`;
             }
 
-            // load PDF from given url (relative or absolute)
+            // load PDF from url
             function loadPdfFromUrl(url) {
                 loadingMsg.style.display = 'block';
                 canvas.style.opacity = '0.2';
@@ -494,15 +534,14 @@
                     pdfDoc = pdf;
                     totalPages = pdf.numPages;
                     currentPage = 1;
-                    scale = defaultScale;       // reset zoom
-                    renderPage(currentPage, scale);
+                    renderPage(currentPage);
                     updateControls();
                 }).catch(error => {
                     console.error('PDF load error:', error);
                     loadingMsg.style.display = 'block';
                     loadingMsg.innerText = '⚠️ Could not load PDF. Check path or server.';
                     pdfDoc = null;
-                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                     pageNumSpan.innerText = 'error';
                 });
             }
@@ -513,11 +552,10 @@
                 if (path) {
                     loadPdfFromUrl(path);
                 } else {
-                    alert('enter a pdf file path (e.g. sample.pdf)');
+                    alert('enter a pdf file path');
                 }
             });
 
-            // click on drawer list items
             pdfList.addEventListener('click', (e) => {
                 const li = e.target.closest('li');
                 if (!li) return;
@@ -525,18 +563,16 @@
                 if (pdfFile) {
                     pdfInput.value = pdfFile;
                     loadPdfFromUrl(pdfFile);
-                    // close drawer after selection (mobile friendly)
                     drawer.classList.remove('open');
                     overlay.classList.remove('active');
                 }
             });
 
-            // pagination
             prevBtn.addEventListener('click', () => {
                 if (!pdfDoc) return;
                 if (currentPage > 1) {
                     currentPage--;
-                    renderPage(currentPage, scale);
+                    renderPage(currentPage);
                 }
             });
 
@@ -544,21 +580,8 @@
                 if (!pdfDoc) return;
                 if (currentPage < pdfDoc.numPages) {
                     currentPage++;
-                    renderPage(currentPage, scale);
+                    renderPage(currentPage);
                 }
-            });
-
-            // zoom
-            zoomInBtn.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                scale = Math.min(scale + 0.25, 3.5);  // cap zoom
-                renderPage(currentPage, scale);
-            });
-
-            zoomOutBtn.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                scale = Math.max(scale - 0.25, 0.6);
-                renderPage(currentPage, scale);
             });
 
             // ---------- menu drawer ----------
@@ -583,7 +606,6 @@
 
             overlay.addEventListener('click', closeDrawer);
 
-            // close drawer on escape key
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && drawer.classList.contains('open')) {
                     closeDrawer();
@@ -595,21 +617,18 @@
                 const isDark = document.body.classList.toggle('dark');
                 localStorage.setItem('pdf-dark', isDark);
                 darkToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                // slight delay to let container recalc, then re-render page with new background
+                if (pdfDoc) setTimeout(() => renderPage(currentPage), 20);
             });
 
-            // optional: initial load from default value (sample.pdf)
+            // initial load from default value (sample.pdf)
             window.addEventListener('load', () => {
                 if (pdfInput.value.trim()) {
-                    // try to load sample.pdf as placeholder (silent fail allowed)
                     loadPdfFromUrl(pdfInput.value.trim());
                 }
             });
 
-            // for mobile, close drawer if you click outside (overlay handles)
-            // make canvas touch friendly
         })();
     </script>
-    <!-- small note: ensure your server has the PDF files at the paths you type.
-         The drawer list shows common names; adjust or extend as needed. -->
 </body>
 </html>
